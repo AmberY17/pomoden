@@ -20,6 +20,7 @@ class CharacterNotifier extends StateNotifier<List<Character>> {
   }
 
   void initForSession(List<String> characterIds) {
+    _breakService?.clearHistory();
     state = CharacterPresets.all
         .where((c) => characterIds.contains(c.id))
         .toList();

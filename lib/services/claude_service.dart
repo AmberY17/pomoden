@@ -32,10 +32,17 @@ class ClaudeService {
     required SessionState session,
     required List<Map<String, String>> conversationHistory,
   }) async {
-    final otherCharacters = allCharacters
-        .where((c) => c.id != speaker.id)
-        .map((c) => '${c.name} (${c.species})')
-        .join(', ');
+    final others = allCharacters.where((c) => c.id != speaker.id).toList();
+    final otherCharacters = others.map((c) => '${c.name} (${c.species})').join(', ');
+
+    final presentIds = others.map((c) => c.id).toSet();
+    final relationshipLines = speaker.relationships.entries
+        .where((e) => presentIds.contains(e.key))
+        .map((e) {
+          final relChar = others.firstWhere((c) => c.id == e.key);
+          return '  - ${relChar.name}: ${e.value}';
+        })
+        .join('\n');
 
     final systemPrompt =
         '''
@@ -49,7 +56,7 @@ Current situation:
 - Block ${session.currentBlock} of ${session.config.totalBlocks} just completed
 - Subject being studied: ${session.config.subject.isEmpty ? 'not specified' : session.config.subject}
 - Other study pals present: ${otherCharacters.isEmpty ? 'none' : otherCharacters}
-- Total study time so far: ${session.totalElapsed.inMinutes} minutes
+${relationshipLines.isEmpty ? '' : '- Your relationships with those present:\n$relationshipLines\n'}- Total study time so far: ${session.totalElapsed.inMinutes} minutes
 
 Rules:
 - Stay completely in character at all times
@@ -57,7 +64,7 @@ Rules:
 - No action emotes like *adjusts spectacles* — just speak naturally
 - Be warm and conversational
 - React to the session context
-- Occasionally address other characters by name
+- Let your relationships shape how you address others — address them by name occasionally
 - Never mention being an AI
 ''';
 
